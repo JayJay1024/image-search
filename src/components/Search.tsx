@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import './Seach.less';
 
 import axios from 'axios';
-import { Button, Input, List } from 'antd';
+import { Button, Input, List, message } from 'antd';
 const { Search } = Input;
 
 const perPageImgCount = 16;  // 4 * 4
 // const flickrAPI = 'https://goo.gl/BtPbZW';  // blocked by CORS
-const flickrAPI2 = 'https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=3e7cc266ae2b0e0d78e279ce8e361736&format=json&nojsoncallback=1&safe_search=1&text=kittens';
+const flickrAPI2 = 'https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=3e7cc266ae2b0e0d78e279ce8e361736&format=json&nojsoncallback=1&safe_search=1';
 
 type DislayType = {
     title: string,
@@ -24,32 +24,32 @@ const SearchImage: React.FunctionComponent = (): JSX.Element => {
     const [displayImgs, setDispalyImgs] = useState<DislayType[]>([]);  // display on the current page
 
     const onSearchHandle = (value: string) => {
-        if (value.length <= 0) { return; }
+        if (value.length <= 0) {
+            message.warning('Enter something firstly ~');
+            return;
+        }
         setLoading(true);
 
-        axios.get(flickrAPI2)
+        axios.get(flickrAPI2, { params: { text: value } })
             .then((res) => {
                 if (res.status === 200 && res.data.photos && res.data.photos.photo.length) {
                     const tmpImgs: DislayType[] = [];
                     const photoMeta = res.data.photos.photo;
 
                     photoMeta.forEach((element: any) => {
-                        if (element.title.indexOf(value) !== -1) {
-                            // add to display
-                            const { farm, server, id, secret, title } = element;
-                            const imgPath = generateImgUrl(farm, server, id, secret);
-                            tmpImgs.push({
-                                title: title,
-                                path: imgPath
-                            });
-                        }
+                        const { farm, server, id, secret, title } = element;
+                        const imgPath = generateImgUrl(farm, server, id, secret);
+                        tmpImgs.push({
+                            title: title,
+                            path: imgPath
+                        });
                     });
                     
                     if (tmpImgs.length) {
                         const moreImgs = tmpImgs.slice(0, perPageImgCount);
                         tmpImgs.splice(0, perPageImgCount)
                         setAllImgs(tmpImgs);
-                        setDispalyImgs(displayImgs.concat(moreImgs));
+                        setDispalyImgs(moreImgs);
                         setLoading(false);
                     }
                     setLoading(false);
